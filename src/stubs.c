@@ -642,18 +642,6 @@ kern_return_t is_io_server_version
 }
 
 
-kern_return_t is_io_service_get_matching_service_bin
-(
-	mach_port_t master_port,
-	io_struct_inband_t matching,
-	mach_msg_type_number_t matchingCnt,
-	mach_port_t *service
-)
-{
-    STUB();
-    return KERN_NOT_SUPPORTED;
-}
-
 kern_return_t is_io_service_match_property_table_bin
 (
 	mach_port_t service,

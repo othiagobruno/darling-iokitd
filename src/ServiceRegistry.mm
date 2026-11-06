@@ -108,6 +108,53 @@ kern_return_t is_io_service_get_matching_services_bin
 	}
 }
 
+kern_return_t is_io_service_get_matching_service_bin
+(
+	mach_port_t master_port,
+	io_struct_inband_t matching,
+	mach_msg_type_number_t matchingCnt,
+	mach_port_t *service
+)
+{
+	CFStringRef errorString = nullptr;
+
+	// no match is reported as success with a null service, like the original
+	*service = MACH_PORT_NULL;
+
+	try
+	{
+		CFTypeRef criteria = IOCFUnserializeBinary(matching, matchingCnt, nullptr, 0, &errorString);
+
+		if (!criteria)
+			throwCFStringException(CFSTR("io_service_get_matching_service_bin(): cannot parse 'matching': %@"), errorString);
+
+		if (CFGetTypeID(criteria) != CFDictionaryGetTypeID())
+		{
+			CFRelease(criteria);
+			throw std::runtime_error("io_service_get_matching_service_bin(): dictionary expected");
+		}
+
+		IOIterator* iterator = ServiceRegistry::instance()->iteratorForMatchingServices((NSDictionary*) criteria);
+		CFRelease(criteria);
+
+		IOObject* first = iterator->next();
+		if (first != nullptr)
+			*service = first->port();
+
+		iterator->releaseLater();
+
+		return kIOReturnSuccess;
+	}
+	catch (const std::exception& e)
+	{
+		os_log_error(OS_LOG_DEFAULT, "is_io_service_get_matching_service_bin: %s", e.what());
+		if (errorString)
+			CFRelease(errorString);
+
+		return kIOReturnBadArgument;
+	}
+}
+
 kern_return_t is_io_service_get_matching_services
 (
 	mach_port_t master_port,
